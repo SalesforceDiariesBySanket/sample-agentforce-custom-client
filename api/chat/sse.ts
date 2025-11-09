@@ -51,6 +51,17 @@ export default async function handler(
   
   // Send initial comment to establish connection
   res.write(': connected\n\n');
+  
+  // Send heartbeat every 15 seconds to keep connection alive
+  const heartbeatInterval = setInterval(() => {
+    res.write(': heartbeat\n\n');
+  }, 15000);
+  
+  // Clean up on close
+  req.on('close', () => {
+    clearInterval(heartbeatInterval);
+    console.log('Client disconnected from SSE');
+  });
 
   try {
     const sseUrl = `${SALESFORCE_SCRT_URL}/eventrouter/v1/sse`;
@@ -86,14 +97,17 @@ export default async function handler(
         const { done, value } = await reader.read();
         
         if (done) {
+          console.log('Salesforce SSE stream ended');
           break;
         }
 
         const chunk = decoder.decode(value, { stream: true });
+        console.log('SSE chunk received from Salesforce:', chunk.substring(0, 200));
         res.write(chunk);
       }
     } finally {
       reader.releaseLock();
+      clearInterval(heartbeatInterval);
     }
 
     res.end();
