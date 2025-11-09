@@ -20,6 +20,7 @@ export function useChat() {
     lastEventId: string;
   } | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializedRef = useRef(false);
 
   const {
@@ -55,6 +56,67 @@ export function useChat() {
       }
     }, INACTIVITY_TIMEOUT);
   }, [isConnected, closeChatApi]);
+
+  const startPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+    }
+
+    setIsConnected(true);
+
+    const pollMessages = async () => {
+      if (!credsRef.current) return;
+
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8080/api"}/chat/message`, {
+          headers: {
+            Authorization: `Bearer ${credsRef.current.accessToken}`,
+            "X-Conversation-Id": credsRef.current.conversationId,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.conversationEntries && data.conversationEntries.length > 0) {
+            const entries = data.conversationEntries.filter((entry: any) =>
+              entry.entryType === "Message" && entry.sender.role === "Chatbot"
+            );
+
+            entries.forEach((entry: any) => {
+              const payload = typeof entry.entryPayload === 'string' 
+                ? JSON.parse(entry.entryPayload)
+                : entry.entryPayload;
+
+              const messageText = payload.abstractMessage.staticContent.text;
+              const messageId = payload.abstractMessage.id;
+
+              // Only add if not already in messages
+              setMessages((prev) => {
+                if (prev.find(m => m.id === messageId)) return prev;
+                return [
+                  ...prev,
+                  {
+                    id: messageId,
+                    type: "ai",
+                    content: messageText,
+                    timestamp: new Date(entry.clientTimestamp),
+                  },
+                ];
+              });
+            });
+
+            setIsLoading(false);
+            setIsTyping(false);
+          }
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    };
+
+    // Poll every 2 seconds
+    pollingRef.current = setInterval(pollMessages, 2000);
+  }, []);
 
   const handleMessage = useCallback(
     (event: MessageEvent) => {
@@ -201,15 +263,14 @@ export function useChat() {
         lastEventId: creds.lastEventId 
       });
 
-      const events = setupEventSource(creds.accessToken, creds.orgId, creds.lastEventId);
-      eventSourceRef.current = events;
-      setupEventHandlers(events);
+      // Start polling for messages instead of SSE
+      startPolling();
     } catch (err) {
       console.error("Chat initialization error:", err);
       setError("Failed to start chat");
       setIsConnected(false);
     }
-  }, [initialize, setupEventSource, setupEventHandlers]);
+  }, [initialize, startPolling]);
 
   const sendMessage = async (content: string) => {
     if (!credsRef.current) return;
@@ -242,6 +303,12 @@ export function useChat() {
   const closeChat = async (onClosed: () => void) => {
     try {
       if (!credsRef.current) return;
+
+      // Stop polling
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
 
       await closeChatApi(
         credsRef.current.accessToken,
