@@ -54,6 +54,11 @@ export default async function handler(
     });
   } catch (error) {
     console.error('Initialize error:', error);
-    res.status(500).json({ error: 'Failed to initialize chat' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ 
+      error: 'Failed to initialize chat',
+      details: errorMessage,
+      url: SALESFORCE_SCRT_URL 
+    });
   }
 }
