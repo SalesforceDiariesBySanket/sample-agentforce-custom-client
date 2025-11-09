@@ -141,22 +141,40 @@ export function useChat() {
         setIsConnected(false);
       };
 
-      events.addEventListener("CONVERSATION_MESSAGE", handleMessage);
+      // Log ALL events to see what's coming through
+      const originalAddEventListener = events.addEventListener.bind(events);
+      events.addEventListener = function(type: string, listener: any, options?: any) {
+        console.log('Adding listener for event type:', type);
+        return originalAddEventListener(type, listener, options);
+      };
+
+      events.addEventListener("CONVERSATION_MESSAGE", (event) => {
+        console.log('CONVERSATION_MESSAGE event received:', event);
+        handleMessage(event as MessageEvent);
+      });
+      
       events.addEventListener(
         "CONVERSATION_PARTICIPANT_CHANGED",
-        handleParticipantChange
+        (event) => {
+          console.log('CONVERSATION_PARTICIPANT_CHANGED event received:', event);
+          handleParticipantChange(event as MessageEvent);
+        }
       );
+      
       events.addEventListener("CONVERSATION_TYPING_STARTED_INDICATOR", () => {
+        console.log('CONVERSATION_TYPING_STARTED_INDICATOR received');
         if (!isLoading) setIsTyping(true);
         resetTimeout();
       });
+      
       events.addEventListener("CONVERSATION_TYPING_STOPPED_INDICATOR", () => {
+        console.log('CONVERSATION_TYPING_STOPPED_INDICATOR received');
         setIsTyping(false);
       });
       
-      // Add listener for all SSE messages to debug
+      // Catch any unnamed events
       events.onmessage = (event) => {
-        console.log('SSE message received:', event);
+        console.log('Unnamed SSE message received:', event.type, event.data);
       };
     },
     [isLoading, resetTimeout, handleMessage, handleParticipantChange]
