@@ -45,13 +45,14 @@ export default async function handler(
   res.setHeader('Connection', 'keep-alive');
 
   try {
-    const sseUrl = `${SALESFORCE_SCRT_URL}/eventrouter/v1/sse?lastEventId=${lastEventId}`;
+    const sseUrl = `${SALESFORCE_SCRT_URL}/eventrouter/v1/sse`;
     
     const response = await fetch(sseUrl, {
       headers: {
         'X-Org-Id': SALESFORCE_ORG_ID,
         Authorization: `Bearer ${token}`,
         Accept: 'text/event-stream',
+        'Last-Event-ID': lastEventId,
       },
     });
 
