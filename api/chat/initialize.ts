@@ -54,6 +54,7 @@ export default async function handler(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'X-Org-Id': SALESFORCE_ORG_ID,
       },
       body: JSON.stringify(requestBody),
