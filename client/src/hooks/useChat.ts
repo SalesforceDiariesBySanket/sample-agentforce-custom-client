@@ -68,7 +68,8 @@ export function useChat() {
       if (!credsRef.current) return;
 
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8080/api"}/chat/message`, {
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+        const response = await fetch(`${API_URL}/chat/message`, {
           headers: {
             Authorization: `Bearer ${credsRef.current.accessToken}`,
             "X-Conversation-Id": credsRef.current.conversationId,
@@ -77,10 +78,14 @@ export function useChat() {
 
         if (response.ok) {
           const data = await response.json();
+          console.log('Polling response:', data);
+          
           if (data.conversationEntries && data.conversationEntries.length > 0) {
             const entries = data.conversationEntries.filter((entry: any) =>
               entry.entryType === "Message" && entry.sender.role === "Chatbot"
             );
+
+            console.log('Found bot entries:', entries.length);
 
             entries.forEach((entry: any) => {
               const payload = typeof entry.entryPayload === 'string' 
@@ -89,6 +94,8 @@ export function useChat() {
 
               const messageText = payload.abstractMessage.staticContent.text;
               const messageId = payload.abstractMessage.id;
+
+              console.log('Bot message:', messageText);
 
               // Only add if not already in messages
               setMessages((prev) => {
@@ -116,6 +123,9 @@ export function useChat() {
 
     // Poll every 2 seconds
     pollingRef.current = setInterval(pollMessages, 2000);
+    
+    // Also poll immediately
+    pollMessages();
   }, []);
 
   const handleMessage = useCallback(
