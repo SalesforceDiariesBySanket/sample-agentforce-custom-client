@@ -104,12 +104,18 @@ export default async function handler(
         const chunk = decoder.decode(value, { stream: true });
         console.log('SSE chunk received from Salesforce:', chunk.substring(0, 200));
         
-        // Write the chunk and try to flush
-        res.write(chunk);
+        // Write the chunk
+        const written = res.write(chunk);
+        console.log('Write successful:', written);
         
         // Force flush if available (Vercel/Node.js specific)
         if (typeof (res as any).flush === 'function') {
           (res as any).flush();
+        }
+        
+        // Also try socket-level flush
+        if ((res as any).socket && typeof (res as any).socket.flush === 'function') {
+          (res as any).socket.flush();
         }
       }
     } finally {
