@@ -48,9 +48,14 @@ export default async function handler(
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  
+  // Send initial comment to establish connection
+  res.write(': connected\n\n');
 
   try {
     const sseUrl = `${SALESFORCE_SCRT_URL}/eventrouter/v1/sse`;
+    
+    console.log('SSE request:', { url: sseUrl, orgId, lastEventId });
     
     const response = await fetch(sseUrl, {
       headers: {
@@ -62,7 +67,11 @@ export default async function handler(
     });
 
     if (!response.ok) {
-      throw new Error(`Salesforce SSE error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Salesforce SSE error:', response.status, errorText);
+      res.write(`data: ${JSON.stringify({ error: `Salesforce SSE error: ${response.status}` })}\n\n`);
+      res.end();
+      return;
     }
 
     if (!response.body) {

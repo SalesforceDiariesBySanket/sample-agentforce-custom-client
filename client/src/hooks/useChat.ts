@@ -121,12 +121,16 @@ export function useChat() {
   const setupEventHandlers = useCallback(
     (events: EventSource) => {
       events.onopen = () => {
+        console.log('SSE connection opened successfully');
         setIsConnected(true);
         setError(null);
         resetTimeout();
       };
 
-      events.onerror = () => setIsConnected(false);
+      events.onerror = (error) => {
+        console.error('SSE connection error:', error);
+        setIsConnected(false);
+      };
 
       events.addEventListener("CONVERSATION_MESSAGE", handleMessage);
       events.addEventListener(
@@ -140,6 +144,11 @@ export function useChat() {
       events.addEventListener("CONVERSATION_TYPING_STOPPED_INDICATOR", () => {
         setIsTyping(false);
       });
+      
+      // Add listener for all SSE messages to debug
+      events.onmessage = (event) => {
+        console.log('SSE message received:', event);
+      };
     },
     [isLoading, resetTimeout, handleMessage, handleParticipantChange]
   );
