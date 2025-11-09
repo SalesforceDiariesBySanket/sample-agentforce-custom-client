@@ -37,22 +37,27 @@ export default async function handler(
   }
 
   try {
+    // Generate unique entry ID
+    const entryId = `typing_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     const response = await fetch(
-      `${SALESFORCE_SCRT_URL}/iamessage/api/v1/conversations/${conversationId}/entries`,
+      `${SALESFORCE_SCRT_URL}/iamessage/api/v2/conversation/${conversationId}/entry`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Org-Id': SALESFORCE_ORG_ID,
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           entryType: isTyping ? 'TypingStartedIndicator' : 'TypingStoppedIndicator',
+          id: entryId,
         }),
       }
     );
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Salesforce error:', errorText);
       throw new Error(`Salesforce API error: ${response.status}`);
     }
 

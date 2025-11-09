@@ -22,9 +22,9 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { SALESFORCE_SCRT_URL, SALESFORCE_ORG_ID } = process.env;
+  const { SALESFORCE_SCRT_URL, SALESFORCE_ORG_ID, SALESFORCE_DEVELOPER_NAME } = process.env;
 
-  if (!SALESFORCE_SCRT_URL || !SALESFORCE_ORG_ID) {
+  if (!SALESFORCE_SCRT_URL || !SALESFORCE_ORG_ID || !SALESFORCE_DEVELOPER_NAME) {
     return res.status(500).json({ error: 'Missing required environment variables' });
   }
 
@@ -37,17 +37,18 @@ export default async function handler(
 
   try {
     const response = await fetch(
-      `${SALESFORCE_SCRT_URL}/iamessage/api/v1/conversations/${conversationId}`,
+      `${SALESFORCE_SCRT_URL}/iamessage/api/v2/conversation/${conversationId}?esDeveloperName=${SALESFORCE_DEVELOPER_NAME}`,
       {
         method: 'DELETE',
         headers: {
-          'X-Org-Id': SALESFORCE_ORG_ID,
           Authorization: `Bearer ${token}`,
         },
       }
     );
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Salesforce error:', errorText);
       throw new Error(`Salesforce API error: ${response.status}`);
     }
 

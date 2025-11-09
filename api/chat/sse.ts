@@ -40,7 +40,7 @@ export default async function handler(
   res.setHeader('Connection', 'keep-alive');
 
   try {
-    const sseUrl = `${SALESFORCE_SCRT_URL}/iamessage/api/v1/sse`;
+    const sseUrl = `${SALESFORCE_SCRT_URL}/eventrouter/v1/sse`;
     
     const response = await fetch(sseUrl, {
       headers: {
