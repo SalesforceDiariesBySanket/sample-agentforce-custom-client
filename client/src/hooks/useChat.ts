@@ -158,6 +158,12 @@ export function useChat() {
 
       const creds = await initialize();
       credsRef.current = creds;
+      
+      console.log('Chat initialized:', { 
+        conversationId: creds.conversationId, 
+        orgId: creds.orgId, 
+        lastEventId: creds.lastEventId 
+      });
 
       const events = setupEventSource(creds.accessToken, creds.orgId, creds.lastEventId);
       eventSourceRef.current = events;

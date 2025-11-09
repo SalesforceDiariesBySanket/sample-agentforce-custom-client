@@ -65,9 +65,22 @@ export function useSalesforceMessaging(): MessagingHookReturn {
   );
 
   const setupEventSource = useCallback((token: string, orgId: string, lastEventId: string): EventSource => {
-    return new EventSource(`${API_BASE_URL}/chat/sse?token=${token}&orgId=${orgId}&lastEventId=${lastEventId}`, {
+    const sseUrl = `${API_BASE_URL}/chat/sse?token=${token}&orgId=${orgId}&lastEventId=${lastEventId}`;
+    console.log('Setting up EventSource:', { url: sseUrl.substring(0, 100) + '...', orgId, lastEventId });
+    
+    const eventSource = new EventSource(sseUrl, {
       withCredentials: true,
     });
+    
+    eventSource.onerror = (error) => {
+      console.error('EventSource error:', error);
+    };
+    
+    eventSource.onopen = () => {
+      console.log('EventSource connection opened');
+    };
+    
+    return eventSource;
   }, []);
 
   return {
