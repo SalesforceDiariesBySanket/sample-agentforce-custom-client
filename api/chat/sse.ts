@@ -131,6 +131,9 @@ export default async function handler(
   }
 }
 
+// Use Edge Runtime for better streaming support
+export const runtime = 'edge';
+
 // Disable body parsing and enable streaming for SSE
 export const config = {
   api: {
