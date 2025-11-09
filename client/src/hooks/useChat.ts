@@ -59,17 +59,26 @@ export function useChat() {
   const handleMessage = useCallback(
     (event: MessageEvent) => {
       try {
+        console.log('Handling message event:', event.data);
         const data = JSON.parse(event.data);
+        console.log('Parsed data:', data);
         const sender = data.conversationEntry.sender.role.toLowerCase();
+        console.log('Sender role:', sender);
+        
         if (sender === "chatbot") {
           setIsTyping(false);
           const payload = JSON.parse(data.conversationEntry.entryPayload);
+          console.log('Message payload:', payload);
+          
+          const messageText = payload.abstractMessage.staticContent.text;
+          console.log('Bot message text:', messageText);
+          
           setMessages((prev) => [
             ...prev,
             {
               id: payload.abstractMessage.id,
               type: "ai",
-              content: payload.abstractMessage.staticContent.text,
+              content: messageText,
               timestamp: new Date(data.conversationEntry.clientTimestamp),
             },
           ]);
@@ -77,7 +86,7 @@ export function useChat() {
           resetTimeout();
         }
       } catch (err) {
-        console.error("Message parse error:", err);
+        console.error("Message parse error:", err, event.data);
       }
     },
     [resetTimeout]
