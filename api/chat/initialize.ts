@@ -29,6 +29,14 @@ export default async function handler(
     return res.status(500).json({ error: 'Missing required environment variables' });
   }
 
+  console.log('Environment check:', {
+    hasScrtUrl: !!SALESFORCE_SCRT_URL,
+    hasOrgId: !!SALESFORCE_ORG_ID,
+    hasDeveloperName: !!SALESFORCE_DEVELOPER_NAME,
+    orgIdLength: SALESFORCE_ORG_ID?.length,
+    developerName: SALESFORCE_DEVELOPER_NAME
+  });
+
   try {
     const response = await fetch(`${SALESFORCE_SCRT_URL}/iamessage/api/v1/configuration`, {
       method: 'POST',
