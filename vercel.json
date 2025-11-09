@@ -1,0 +1,50 @@
+{
+  "buildCommand": "cd client && pnpm build",
+  "outputDirectory": "client/dist",
+  "installCommand": "pnpm install",
+  "rewrites": [
+    {
+      "source": "/api/chat/initialize",
+      "destination": "/api/chat/initialize"
+    },
+    {
+      "source": "/api/chat/message",
+      "destination": "/api/chat/message"
+    },
+    {
+      "source": "/api/chat/end",
+      "destination": "/api/chat/end"
+    },
+    {
+      "source": "/api/chat/sse",
+      "destination": "/api/chat/sse"
+    },
+    {
+      "source": "/api/chat/typing",
+      "destination": "/api/chat/typing"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, X-Conversation-Id"
+        }
+      ]
+    }
+  ]
+}

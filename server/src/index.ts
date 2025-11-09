@@ -19,7 +19,10 @@ async function start() {
     });
 
     await server.register(cors, {
-      origin: ["http://localhost:5173"],
+      origin: [
+        "http://localhost:5173",
+        /\.vercel\.app$/,  // Allow all Vercel deployments
+      ],
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
       credentials: true,
       allowedHeaders: [
