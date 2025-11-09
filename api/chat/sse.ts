@@ -29,9 +29,14 @@ export default async function handler(
   }
 
   const token = req.query.token as string;
+  const lastEventId = req.query.lastEventId as string;
 
   if (!token) {
     return res.status(400).json({ error: 'Missing token parameter' });
+  }
+
+  if (!lastEventId) {
+    return res.status(400).json({ error: 'Missing lastEventId parameter' });
   }
 
   // Set up SSE headers
@@ -40,7 +45,7 @@ export default async function handler(
   res.setHeader('Connection', 'keep-alive');
 
   try {
-    const sseUrl = `${SALESFORCE_SCRT_URL}/eventrouter/v1/sse`;
+    const sseUrl = `${SALESFORCE_SCRT_URL}/eventrouter/v1/sse?lastEventId=${lastEventId}`;
     
     const response = await fetch(sseUrl, {
       headers: {

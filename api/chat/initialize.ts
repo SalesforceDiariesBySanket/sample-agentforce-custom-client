@@ -97,10 +97,11 @@ export default async function handler(
       throw new Error(`Failed to create conversation: ${conversationResponse.status}`);
     }
     
-    // Return both the access token and conversationId
+    // Return access token, conversationId, and lastEventId for SSE
     res.status(200).json({
       accessToken: data.accessToken,
       conversationId: conversationId,
+      lastEventId: data.lastEventId || '0',
     });
   } catch (error) {
     console.error('Initialize error:', error);
