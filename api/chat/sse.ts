@@ -129,7 +129,6 @@ export default async function handler(
 export const config = {
   api: {
     bodyParser: false,
-    responseLimit: false,
+    externalResolver: true, // Tell Vercel we're handling the response ourselves
   },
-  maxDuration: 300, // 5 minutes max for streaming
 };
