@@ -73,11 +73,16 @@ export function useSalesforceMessaging(): MessagingHookReturn {
     });
     
     eventSource.onerror = (error) => {
-      console.error('EventSource error:', error);
+      console.error('EventSource error:', error, 'ReadyState:', eventSource.readyState);
     };
     
     eventSource.onopen = () => {
-      console.log('EventSource connection opened');
+      console.log('EventSource connection opened, ReadyState:', eventSource.readyState);
+    };
+    
+    // Listen for ALL message types
+    eventSource.onmessage = (event) => {
+      console.log('EventSource received generic message:', event);
     };
     
     return eventSource;
