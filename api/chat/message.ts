@@ -18,9 +18,9 @@ export default async function handler(
     return;
   }
 
-  const { SALESFORCE_SCRT_URL, SALESFORCE_ORG_ID } = process.env;
+  const { SALESFORCE_SCRT_URL, SALESFORCE_ORG_ID, SALESFORCE_DEVELOPER_NAME } = process.env;
 
-  if (!SALESFORCE_SCRT_URL || !SALESFORCE_ORG_ID) {
+  if (!SALESFORCE_SCRT_URL || !SALESFORCE_ORG_ID || !SALESFORCE_DEVELOPER_NAME) {
     return res.status(500).json({ error: 'Missing required environment variables' });
   }
 
@@ -35,41 +35,46 @@ export default async function handler(
     }
 
     try {
+      // Generate unique message ID
+      const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
       const response = await fetch(
-        `${SALESFORCE_SCRT_URL}/iamessage/api/v1/conversations/${conversationId}/entries`,
+        `${SALESFORCE_SCRT_URL}/iamessage/api/v2/conversation/${conversationId}/message`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-Org-Id': SALESFORCE_ORG_ID,
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            entryType: 'Message',
-            entryPayload: JSON.stringify({
-              abstractMessage: {
-                messageType: 'StaticContentMessage',
-                staticContent: {
-                  formatType: 'Text',
-                  text: message,
-                },
+            message: {
+              id: messageId,
+              messageType: 'StaticContentMessage',
+              staticContent: {
+                formatType: 'Text',
+                text: message,
               },
-            }),
+            },
+            esDeveloperName: SALESFORCE_DEVELOPER_NAME,
+            isNewMessagingSession: false,
+            language: ''
           }),
         }
       );
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Salesforce error:', errorText);
         throw new Error(`Salesforce API error: ${response.status}`);
       }
 
-      res.status(200).json({ success: true });
+      res.status(200).json({ success: true, messageId });
     } catch (error) {
       console.error('Send message error:', error);
       res.status(500).json({ error: 'Failed to send message' });
     }
   } else if (req.method === 'GET') {
-    // Get messages
+    // Get messages (list conversation entries)
     const token = req.headers.authorization?.replace('Bearer ', '');
     const conversationId = req.headers['x-conversation-id'] as string;
 
@@ -79,16 +84,17 @@ export default async function handler(
 
     try {
       const response = await fetch(
-        `${SALESFORCE_SCRT_URL}/iamessage/api/v1/conversations/${conversationId}/entries`,
+        `${SALESFORCE_SCRT_URL}/iamessage/api/v2/conversation/${conversationId}/entries`,
         {
           headers: {
-            'X-Org-Id': SALESFORCE_ORG_ID,
             Authorization: `Bearer ${token}`,
           },
         }
       );
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Salesforce error:', errorText);
         throw new Error(`Salesforce API error: ${response.status}`);
       }
 
