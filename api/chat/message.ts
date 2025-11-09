@@ -35,8 +35,8 @@ export default async function handler(
     }
 
     try {
-      // Generate unique message ID
-      const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Generate unique message ID in UUID format
+      const messageId = `${crypto.randomUUID()}`;
       
       const response = await fetch(
         `${SALESFORCE_SCRT_URL}/iamessage/api/v2/conversation/${conversationId}/message`,
