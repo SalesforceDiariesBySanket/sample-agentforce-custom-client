@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { randomUUID } from 'crypto';
 
 // Vercel serverless function to initialize chat with Salesforce
 export default async function handler(
@@ -71,7 +72,36 @@ export default async function handler(
     }
 
     const data = await response.json();
-    res.status(200).json(data);
+    
+    // Generate a conversationId and create the conversation
+    const conversationId = randomUUID();
+    console.log('Creating conversation with ID:', conversationId);
+    
+    const conversationResponse = await fetch(`${SALESFORCE_SCRT_URL}/iamessage/api/v2/conversation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${data.accessToken}`,
+      },
+      body: JSON.stringify({
+        conversationId: conversationId,
+        esDeveloperName: SALESFORCE_DEVELOPER_NAME,
+      }),
+    });
+    
+    console.log('Conversation creation response status:', conversationResponse.status);
+    
+    if (!conversationResponse.ok) {
+      const errorBody = await conversationResponse.text();
+      console.error('Conversation creation error:', errorBody);
+      throw new Error(`Failed to create conversation: ${conversationResponse.status}`);
+    }
+    
+    // Return both the access token and conversationId
+    res.status(200).json({
+      accessToken: data.accessToken,
+      conversationId: conversationId,
+    });
   } catch (error) {
     console.error('Initialize error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
