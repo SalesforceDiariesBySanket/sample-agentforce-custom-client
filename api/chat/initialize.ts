@@ -37,6 +37,18 @@ export default async function handler(
     developerName: SALESFORCE_DEVELOPER_NAME
   });
 
+  const requestBody = {
+    esDeveloperName: SALESFORCE_DEVELOPER_NAME,
+    capabilitiesVersion: '1',
+    platform: 'Web',
+  };
+
+  console.log('Making request to Salesforce:', {
+    url: `${SALESFORCE_SCRT_URL}/iamessage/api/v1/configuration`,
+    orgId: SALESFORCE_ORG_ID,
+    body: requestBody
+  });
+
   try {
     const response = await fetch(`${SALESFORCE_SCRT_URL}/iamessage/api/v1/configuration`, {
       method: 'POST',
@@ -44,14 +56,14 @@ export default async function handler(
         'Content-Type': 'application/json',
         'X-Org-Id': SALESFORCE_ORG_ID,
       },
-      body: JSON.stringify({
-        esDeveloperName: SALESFORCE_DEVELOPER_NAME,
-        capabilitiesVersion: '1',
-        platform: 'Web',
-      }),
+      body: JSON.stringify(requestBody),
     });
 
+    console.log('Salesforce response status:', response.status);
+
     if (!response.ok) {
+      const errorBody = await response.text();
+      console.error('Salesforce error response:', errorBody);
       throw new Error(`Salesforce API error: ${response.status}`);
     }
 
