@@ -38,24 +38,26 @@ export default async function handler(
   });
 
   const requestBody = {
+    orgId: SALESFORCE_ORG_ID,
     esDeveloperName: SALESFORCE_DEVELOPER_NAME,
     capabilitiesVersion: '1',
     platform: 'Web',
+    context: {
+      appName: 'agentforce_custom_client',
+      clientVersion: '1.0.0'
+    }
   };
 
   console.log('Making request to Salesforce:', {
-    url: `${SALESFORCE_SCRT_URL}/iamessage/api/v1/configuration`,
-    orgId: SALESFORCE_ORG_ID,
+    url: `${SALESFORCE_SCRT_URL}/iamessage/api/v2/authorization/unauthenticated/access-token`,
     body: requestBody
   });
 
   try {
-    const response = await fetch(`${SALESFORCE_SCRT_URL}/iamessage/api/v1/configuration`, {
+    const response = await fetch(`${SALESFORCE_SCRT_URL}/iamessage/api/v2/authorization/unauthenticated/access-token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-Org-Id': SALESFORCE_ORG_ID,
       },
       body: JSON.stringify(requestBody),
     });
