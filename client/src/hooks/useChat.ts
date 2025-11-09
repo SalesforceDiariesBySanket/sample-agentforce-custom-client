@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Entry, Message } from "../types";
+import { Message } from "../types";
 import { useSalesforceMessaging } from "./useSalesforceMessaging";
 
 const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes
@@ -27,7 +27,6 @@ export function useChat() {
     initialize,
     sendMessage: sendMessageToApi,
     closeChat: closeChatApi,
-    setupEventSource,
   } = useSalesforceMessaging();
 
   const resetTimeout = useCallback(() => {
@@ -81,12 +80,14 @@ export function useChat() {
           console.log('Polling response:', data);
           
           if (data.conversationEntries && data.conversationEntries.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const entries = data.conversationEntries.filter((entry: any) =>
               entry.entryType === "Message" && entry.sender.role === "Chatbot"
             );
 
             console.log('Found bot entries:', entries.length);
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             entries.forEach((entry: any) => {
               const payload = typeof entry.entryPayload === 'string' 
                 ? JSON.parse(entry.entryPayload)
@@ -124,133 +125,10 @@ export function useChat() {
     // Poll every 2 seconds
     pollingRef.current = setInterval(pollMessages, 2000);
     
+        
     // Also poll immediately
     pollMessages();
   }, []);
-
-  const handleMessage = useCallback(
-    (event: MessageEvent) => {
-      try {
-        console.log('Handling message event:', event.data);
-        const data = JSON.parse(event.data);
-        console.log('Parsed data:', data);
-        const sender = data.conversationEntry.sender.role.toLowerCase();
-        console.log('Sender role:', sender);
-        
-        if (sender === "chatbot") {
-          setIsTyping(false);
-          const payload = JSON.parse(data.conversationEntry.entryPayload);
-          console.log('Message payload:', payload);
-          
-          const messageText = payload.abstractMessage.staticContent.text;
-          console.log('Bot message text:', messageText);
-          
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: payload.abstractMessage.id,
-              type: "ai",
-              content: messageText,
-              timestamp: new Date(data.conversationEntry.clientTimestamp),
-            },
-          ]);
-          setIsLoading(false);
-          resetTimeout();
-        }
-      } catch (err) {
-        console.error("Message parse error:", err, event.data);
-      }
-    },
-    [resetTimeout]
-  );
-
-  const handleParticipantChange = useCallback((event: MessageEvent) => {
-    const data = JSON.parse(event.data);
-    const entries = JSON.parse(data.conversationEntry.entryPayload).entries;
-
-    entries.forEach((entry: Entry) => {
-      if (
-        entry.operation === "add" &&
-        entry.participant.role.toLowerCase() === "chatbot"
-      ) {
-        setCurrentAgent(entry.displayName);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            type: "system",
-            content: `${entry.displayName} has joined the chat`,
-            timestamp: new Date(),
-          },
-        ]);
-      }
-      if (entry.operation === "remove" && entry.participant.role === "agent") {
-        setCurrentAgent(null);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            type: "system",
-            content: `${entry.displayName} has left the chat`,
-            timestamp: new Date(),
-          },
-        ]);
-      }
-    });
-  }, []);
-
-  const setupEventHandlers = useCallback(
-    (events: EventSource) => {
-      events.onopen = () => {
-        console.log('SSE connection opened successfully');
-        setIsConnected(true);
-        setError(null);
-        resetTimeout();
-      };
-
-      events.onerror = (error) => {
-        console.error('SSE connection error:', error);
-        setIsConnected(false);
-      };
-
-      // Log ALL events to see what's coming through
-      const originalAddEventListener = events.addEventListener.bind(events);
-      events.addEventListener = function(type: string, listener: any, options?: any) {
-        console.log('Adding listener for event type:', type);
-        return originalAddEventListener(type, listener, options);
-      };
-
-      events.addEventListener("CONVERSATION_MESSAGE", (event) => {
-        console.log('CONVERSATION_MESSAGE event received:', event);
-        handleMessage(event as MessageEvent);
-      });
-      
-      events.addEventListener(
-        "CONVERSATION_PARTICIPANT_CHANGED",
-        (event) => {
-          console.log('CONVERSATION_PARTICIPANT_CHANGED event received:', event);
-          handleParticipantChange(event as MessageEvent);
-        }
-      );
-      
-      events.addEventListener("CONVERSATION_TYPING_STARTED_INDICATOR", () => {
-        console.log('CONVERSATION_TYPING_STARTED_INDICATOR received');
-        if (!isLoading) setIsTyping(true);
-        resetTimeout();
-      });
-      
-      events.addEventListener("CONVERSATION_TYPING_STOPPED_INDICATOR", () => {
-        console.log('CONVERSATION_TYPING_STOPPED_INDICATOR received');
-        setIsTyping(false);
-      });
-      
-      // Catch any unnamed events
-      events.onmessage = (event) => {
-        console.log('Unnamed SSE message received:', event.type, event.data);
-      };
-    },
-    [isLoading, resetTimeout, handleMessage, handleParticipantChange]
-  );
 
   const startChat = useCallback(async () => {
     try {
@@ -342,40 +220,12 @@ export function useChat() {
     if (isInitializedRef.current) return;
     isInitializedRef.current = true;
 
-    const cleanupEventSource = (eventSource: EventSource) => {
-      eventSource.removeEventListener("CONVERSATION_MESSAGE", handleMessage);
-      eventSource.removeEventListener(
-        "HANDLE_PARTICIPANT_CHANGE",
-        handleParticipantChange
-      );
-      eventSource.removeEventListener(
-        "CONVERSATION_TYPING_STARTED_INDICATOR",
-        () => {
-          if (!isLoading) setIsTyping(true);
-          resetTimeout();
-        }
-      );
-      eventSource.removeEventListener(
-        "CONVERSATION_TYPING_STOPPED_INDICATOR",
-        () => {
-          setIsTyping(false);
-        }
-      );
-
-      eventSource.close();
-    };
     startChat();
     return () => {
-      if (eventSourceRef.current) cleanupEventSource(eventSourceRef.current);
+      if (pollingRef.current) clearInterval(pollingRef.current);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [
-    startChat,
-    isLoading,
-    resetTimeout,
-    handleMessage,
-    handleParticipantChange,
-  ]);
+  }, [startChat]);
 
   return {
     messages,
