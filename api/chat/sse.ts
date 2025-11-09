@@ -103,7 +103,14 @@ export default async function handler(
 
         const chunk = decoder.decode(value, { stream: true });
         console.log('SSE chunk received from Salesforce:', chunk.substring(0, 200));
+        
+        // Write the chunk and try to flush
         res.write(chunk);
+        
+        // Force flush if available (Vercel/Node.js specific)
+        if (typeof (res as any).flush === 'function') {
+          (res as any).flush();
+        }
       }
     } finally {
       reader.releaseLock();
@@ -118,9 +125,11 @@ export default async function handler(
   }
 }
 
-// Disable body parsing for streaming
+// Disable body parsing and enable streaming for SSE
 export const config = {
   api: {
     bodyParser: false,
+    responseLimit: false,
   },
+  maxDuration: 300, // 5 minutes max for streaming
 };
