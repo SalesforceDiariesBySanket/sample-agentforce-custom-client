@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// Vercel serverless function to initialize chat with Salesforce
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
