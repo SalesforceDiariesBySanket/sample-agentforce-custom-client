@@ -22,17 +22,22 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { SALESFORCE_SCRT_URL, SALESFORCE_ORG_ID } = process.env;
+  const { SALESFORCE_SCRT_URL } = process.env;
 
-  if (!SALESFORCE_SCRT_URL || !SALESFORCE_ORG_ID) {
+  if (!SALESFORCE_SCRT_URL) {
     return res.status(500).json({ error: 'Missing required environment variables' });
   }
 
   const token = req.query.token as string;
+  const orgId = req.query.orgId as string;
   const lastEventId = req.query.lastEventId as string;
 
   if (!token) {
     return res.status(400).json({ error: 'Missing token parameter' });
+  }
+
+  if (!orgId) {
+    return res.status(400).json({ error: 'Missing orgId parameter' });
   }
 
   if (!lastEventId) {
@@ -49,7 +54,7 @@ export default async function handler(
     
     const response = await fetch(sseUrl, {
       headers: {
-        'X-Org-Id': SALESFORCE_ORG_ID,
+        'X-Org-Id': orgId,
         Authorization: `Bearer ${token}`,
         Accept: 'text/event-stream',
         'Last-Event-ID': lastEventId,

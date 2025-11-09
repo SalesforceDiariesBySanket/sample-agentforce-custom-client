@@ -73,6 +73,17 @@ export default async function handler(
 
     const data = await response.json();
     
+    // Decode the JWT token to extract the orgId
+    let tokenOrgId = SALESFORCE_ORG_ID;
+    try {
+      const tokenPayload = data.accessToken.split('.')[1];
+      const decodedPayload = JSON.parse(Buffer.from(tokenPayload, 'base64').toString());
+      tokenOrgId = decodedPayload.orgId || SALESFORCE_ORG_ID;
+      console.log('Extracted orgId from token:', tokenOrgId);
+    } catch (error) {
+      console.warn('Failed to extract orgId from token, using env var:', error);
+    }
+    
     // Generate a conversationId and create the conversation
     const conversationId = randomUUID();
     console.log('Creating conversation with ID:', conversationId);
@@ -97,10 +108,11 @@ export default async function handler(
       throw new Error(`Failed to create conversation: ${conversationResponse.status}`);
     }
     
-    // Return access token, conversationId, and lastEventId for SSE
+    // Return access token, conversationId, orgId from token, and lastEventId for SSE
     res.status(200).json({
       accessToken: data.accessToken,
       conversationId: conversationId,
+      orgId: tokenOrgId,
       lastEventId: data.lastEventId || '0',
     });
   } catch (error) {

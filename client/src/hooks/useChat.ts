@@ -16,6 +16,7 @@ export function useChat() {
   const credsRef = useRef<{
     accessToken: string;
     conversationId: string;
+    orgId: string;
     lastEventId: string;
   } | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -158,7 +159,7 @@ export function useChat() {
       const creds = await initialize();
       credsRef.current = creds;
 
-      const events = setupEventSource(creds.accessToken, creds.lastEventId);
+      const events = setupEventSource(creds.accessToken, creds.orgId, creds.lastEventId);
       eventSourceRef.current = events;
       setupEventHandlers(events);
     } catch (err) {

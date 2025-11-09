@@ -6,6 +6,7 @@ const API_BASE_URL =
 interface MessagingCredentials {
   accessToken: string;
   conversationId: string;
+  orgId: string;
   lastEventId: string;
 }
 
@@ -17,7 +18,7 @@ interface MessagingHookReturn {
     content: string
   ) => Promise<void>;
   closeChat: (token: string, conversationId: string) => Promise<void>;
-  setupEventSource: (token: string, lastEventId: string) => EventSource;
+  setupEventSource: (token: string, orgId: string, lastEventId: string) => EventSource;
 }
 
 export function useSalesforceMessaging(): MessagingHookReturn {
@@ -63,8 +64,8 @@ export function useSalesforceMessaging(): MessagingHookReturn {
     []
   );
 
-  const setupEventSource = useCallback((token: string, lastEventId: string): EventSource => {
-    return new EventSource(`${API_BASE_URL}/chat/sse?token=${token}&lastEventId=${lastEventId}`, {
+  const setupEventSource = useCallback((token: string, orgId: string, lastEventId: string): EventSource => {
+    return new EventSource(`${API_BASE_URL}/chat/sse?token=${token}&orgId=${orgId}&lastEventId=${lastEventId}`, {
       withCredentials: true,
     });
   }, []);
