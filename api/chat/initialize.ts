@@ -71,10 +71,7 @@ export default async function handler(
     }
 
     const data = await response.json();
-    res.status(200).json({
-      accessToken: data.accessToken,
-      conversationId: data.conversationId,
-    });
+    res.status(200).json(data);
   } catch (error) {
     console.error('Initialize error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
